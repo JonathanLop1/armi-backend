@@ -9,4 +9,5 @@ public interface UserPersistencePort {
     Optional<AppUser> findUserById(Long id);
     AppUser saveUser(AppUser user);
     void deleteAllUsers();
+    void deleteUserById(Long id);
 }

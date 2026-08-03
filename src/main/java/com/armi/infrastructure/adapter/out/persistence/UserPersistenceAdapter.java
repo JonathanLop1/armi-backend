@@ -36,4 +36,9 @@ public class UserPersistenceAdapter implements UserPersistencePort {
     public void deleteAllUsers() {
         userRepository.deleteAll();
     }
+
+    @Override
+    public void deleteUserById(Long id) {
+        userRepository.deleteById(id);
+    }
 }

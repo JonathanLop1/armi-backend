@@ -52,12 +52,24 @@ public class UserDomainService implements UserUseCase {
     @Override
     @Transactional
     public List<AppUser> createUsersBulk(List<AppUser> users) {
+        List<AppUser> existingUsers = userPersistencePort.findAllUsers();
+        java.util.Set<String> existingEmails = existingUsers.stream()
+                .map(u -> u.getEmail().trim().toLowerCase())
+                .collect(java.util.stream.Collectors.toSet());
+
         List<AppUser> savedUsers = new java.util.ArrayList<>();
         for (AppUser u : users) {
+            if (u.getEmail() == null || u.getEmail().trim().isEmpty()) continue;
+            String cleanEmail = u.getEmail().trim().toLowerCase();
+            if (existingEmails.contains(cleanEmail)) continue;
+
             if (u.getAccumulatedEarnings() == null) u.setAccumulatedEarnings(0.0);
             if (u.getRole() == null || u.getRole().isEmpty()) u.setRole("DRIVER");
-            if (u.getPassword() == null || u.getPassword().isEmpty()) u.setPassword("123456");
-            savedUsers.add(userPersistencePort.saveUser(u));
+            if (u.getPassword() == null || u.getPassword().isEmpty()) u.setPassword(u.getEmail());
+            
+            AppUser saved = userPersistencePort.saveUser(u);
+            savedUsers.add(saved);
+            existingEmails.add(cleanEmail);
         }
         return savedUsers;
     }
@@ -71,5 +83,11 @@ public class UserDomainService implements UserUseCase {
                 .filter(u -> (emailOrId.trim().equalsIgnoreCase(u.getEmail()) || emailOrId.trim().equalsIgnoreCase(u.getName())) 
                           && password.trim().equals(u.getPassword()))
                 .findFirst();
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        userPersistencePort.deleteUserById(id);
     }
 }
