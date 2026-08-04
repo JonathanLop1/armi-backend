@@ -12,8 +12,8 @@ import java.util.List;
 public interface ShiftRepository extends JpaRepository<Shift, Long> {
     List<Shift> findByAssignedTo(AppUser user);
     
-    // Check if user has any shifts that overlap with given times
-    @Query("SELECT s FROM Shift s WHERE s.assignedTo = :user AND " +
+    // Check if user has any active/assigned shifts that overlap with given times (excluding completed shifts)
+    @Query("SELECT s FROM Shift s WHERE s.assignedTo = :user AND s.status != 'completed' AND " +
            "(s.startTime < :end AND s.endTime > :start)")
     List<Shift> findOverlappingShifts(
             @Param("user") AppUser user, 
