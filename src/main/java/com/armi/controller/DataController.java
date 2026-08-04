@@ -2,6 +2,8 @@ package com.armi.controller;
 
 import com.armi.domain.port.in.ShiftUseCase;
 import com.armi.domain.port.in.UserUseCase;
+import com.armi.repository.IncidentReportRepository;
+import com.armi.repository.OrderLogRepository;
 import com.armi.repository.StoreRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,11 +19,21 @@ public class DataController {
     private final ShiftUseCase shiftUseCase;
     private final UserUseCase userUseCase;
     private final StoreRepository storeRepository;
+    private final OrderLogRepository orderLogRepository;
+    private final IncidentReportRepository incidentReportRepository;
 
-    public DataController(ShiftUseCase shiftUseCase, UserUseCase userUseCase, StoreRepository storeRepository) {
+    public DataController(
+            ShiftUseCase shiftUseCase,
+            UserUseCase userUseCase,
+            StoreRepository storeRepository,
+            OrderLogRepository orderLogRepository,
+            IncidentReportRepository incidentReportRepository
+    ) {
         this.shiftUseCase = shiftUseCase;
         this.userUseCase = userUseCase;
         this.storeRepository = storeRepository;
+        this.orderLogRepository = orderLogRepository;
+        this.incidentReportRepository = incidentReportRepository;
     }
 
     // Dashboard Data (Aggregated Facade for Web Dashboard)
@@ -32,6 +44,8 @@ public class DataController {
         data.put("shifts", shiftUseCase.getAllShifts());
         data.put("users", userUseCase.getAllUsers());
         data.put("timeLogs", shiftUseCase.getAllTimeLogs());
+        data.put("orders", orderLogRepository.findAll());
+        data.put("incidents", incidentReportRepository.findAll());
         return ResponseEntity.ok(data);
     }
 
@@ -45,9 +59,19 @@ public class DataController {
         return ResponseEntity.ok(shiftUseCase.getAllTimeLogs());
     }
 
+    // Completely wipe all tables to 0 records (Clean Slate)
+    @DeleteMapping("/data/clean-slate")
+    public ResponseEntity<String> cleanSlateDatabase() {
+        orderLogRepository.deleteAll();
+        incidentReportRepository.deleteAll();
+        shiftUseCase.deleteAllShifts();
+        storeRepository.deleteAll();
+        userUseCase.getAllUsers().forEach(u -> userUseCase.deleteUser(u.getId()));
+        return ResponseEntity.ok("Base de datos vaciada totalmente a 0 registros. Lista para la carga del nuevo Excel.");
+    }
+
     @DeleteMapping("/data/reset-all")
     public ResponseEntity<String> resetAllData() {
-        shiftUseCase.resetAllData();
-        return ResponseEntity.ok("Base de datos reiniciada totalmente desde cero.");
+        return cleanSlateDatabase();
     }
 }

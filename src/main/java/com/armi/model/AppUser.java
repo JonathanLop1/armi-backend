@@ -13,6 +13,7 @@ public class AppUser {
     private String email;
     private String password = "123456"; // Default password
     private String role; // "ADMIN" or "DRIVER"
+    private String phone; // WhatsApp contact e.g. "3248113411"
     private Double accumulatedEarnings = 0.0;
 
     public AppUser() {}
@@ -43,6 +44,8 @@ public class AppUser {
     public void setPassword(String password) { this.password = password; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
     public Double getAccumulatedEarnings() { return accumulatedEarnings; }
     public void setAccumulatedEarnings(Double accumulatedEarnings) { this.accumulatedEarnings = accumulatedEarnings; }
 }
