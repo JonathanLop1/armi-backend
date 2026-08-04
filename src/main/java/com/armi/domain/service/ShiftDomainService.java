@@ -168,23 +168,20 @@ public class ShiftDomainService implements ShiftUseCase {
     public Shift startShift(Long shiftId, Long driverId, Double lat, Double lng) {
         Shift shift = shiftPersistencePort.findShiftById(shiftId)
                 .orElseThrow(() -> new RuntimeException("Turno no encontrado"));
-        if (shift.getAssignedTo() == null || !shift.getAssignedTo().getId().equals(driverId)) {
-            throw new RuntimeException("Turno no asignado a este repartidor");
-        }
-        if (!"assigned".equals(shift.getStatus())) {
-            throw new RuntimeException("El turno no está en estado asignado");
+        AppUser driver = userPersistencePort.findUserById(driverId)
+                .orElseThrow(() -> new RuntimeException("Repartidor no encontrado"));
+
+        if ("in_progress".equals(shift.getStatus()) && shift.getAssignedTo() != null && shift.getAssignedTo().getId().equals(driverId)) {
+            return shift;
         }
 
-        List<Shift> activeShifts = shiftPersistencePort.findAllShifts().stream()
-                .filter(s -> s.getAssignedTo() != null && s.getAssignedTo().getId().equals(driverId) && "in_progress".equals(s.getStatus()))
-                .toList();
-        if (!activeShifts.isEmpty()) {
-            throw new RuntimeException("No puedes iniciar este turno porque ya tienes un turno en curso. Debes finalizar el turno activo antes de iniciar uno nuevo.");
+        if (shift.getAssignedTo() == null || "available".equals(shift.getStatus())) {
+            shift.setAssignedTo(driver);
+            shift.setStatus("assigned");
         }
 
-        // Strict Geolocation Enforcement: Block starting shift if GPS is off or missing
-        if (lat == null || lng == null || (lat == 0.0 && lng == 0.0)) {
-            throw new RuntimeException("No se detectó la ubicación GPS de tu dispositivo. Por favor activa la ubicación (GPS) en tu teléfono y otorga permisos para poder iniciar el turno.");
+        if (!shift.getAssignedTo().getId().equals(driverId)) {
+            throw new RuntimeException("Este turno está asignado a otro repartidor.");
         }
 
         shift.setStatus("in_progress");
