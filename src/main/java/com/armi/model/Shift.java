@@ -25,6 +25,7 @@ public class Shift {
     private String status;
 
     private Integer ordersCount = 0;
+    private Double rate = 48000.0; // Fixed pay value e.g. 48000.0, 60000.0
 
     @ManyToOne
     @JoinColumn(name = "assigned_to")
@@ -52,6 +53,8 @@ public class Shift {
     public void setStatus(String status) { this.status = status; }
     public Integer getOrdersCount() { return ordersCount; }
     public void setOrdersCount(Integer ordersCount) { this.ordersCount = ordersCount; }
+    public Double getRate() { return rate; }
+    public void setRate(Double rate) { this.rate = rate; }
     public AppUser getAssignedTo() { return assignedTo; }
     public void setAssignedTo(AppUser assignedTo) { this.assignedTo = assignedTo; }
 }

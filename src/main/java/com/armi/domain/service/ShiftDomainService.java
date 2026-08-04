@@ -20,10 +20,12 @@ public class ShiftDomainService implements ShiftUseCase {
 
     private final ShiftPersistencePort shiftPersistencePort;
     private final UserPersistencePort userPersistencePort;
+    private final com.armi.repository.PayrollLogRepository payrollLogRepository;
 
-    public ShiftDomainService(ShiftPersistencePort shiftPersistencePort, UserPersistencePort userPersistencePort) {
+    public ShiftDomainService(ShiftPersistencePort shiftPersistencePort, UserPersistencePort userPersistencePort, com.armi.repository.PayrollLogRepository payrollLogRepository) {
         this.shiftPersistencePort = shiftPersistencePort;
         this.userPersistencePort = userPersistencePort;
+        this.payrollLogRepository = payrollLogRepository;
     }
 
     @Override
@@ -222,14 +224,7 @@ public class ShiftDomainService implements ShiftUseCase {
             throw new RuntimeException("Repartidor no encontrado para este turno");
         }
 
-        double dailyEarned;
-        if ("FIXED".equalsIgnoreCase(shift.getPayType())) {
-            dailyEarned = (shift.getHourlyRate() != null && shift.getHourlyRate() > 0) ? shift.getHourlyRate() : 60000.0;
-        } else {
-            long scheduledMinutes = Duration.between(shift.getStartTime(), shift.getEndTime()).toMinutes();
-            double scheduledHours = scheduledMinutes > 0 ? (scheduledMinutes / 60.0) : 8.0;
-            dailyEarned = scheduledHours * (shift.getHourlyRate() != null ? shift.getHourlyRate() : 10000.0);
-        }
+        double dailyEarned = (shift.getRate() != null && shift.getRate() > 0) ? shift.getRate() : 48000.0;
 
         TimeLog log = shiftPersistencePort.findFirstTimeLogByShiftId(shiftId).orElseGet(() -> {
             TimeLog newLog = new TimeLog();
@@ -248,17 +243,28 @@ public class ShiftDomainService implements ShiftUseCase {
         driver.setAccumulatedEarnings(currentEarnings + dailyEarned);
         userPersistencePort.saveUser(driver);
 
-        int currentDuration = (shift.getDurationDays() != null && shift.getDurationDays() > 0) ? shift.getDurationDays() : 1;
-        int remainingDays = currentDuration - 1;
-        shift.setDurationDays(remainingDays);
-
-        if (remainingDays > 0) {
-            shift.setStartTime(shift.getStartTime().plusDays(1));
-            shift.setEndTime(shift.getEndTime().plusDays(1));
-            shift.setStatus("assigned");
-        } else {
-            shift.setStatus("completed");
+        // Record Payroll Log
+        try {
+            String storeName = shift.getStore() != null ? shift.getStore().getName() : "Tienda";
+            String startH = shift.getStartTime() != null ? String.format("%02d:00", shift.getStartTime().getHour()) : "11:00";
+            String endH = shift.getEndTime() != null ? String.format("%02d:00", shift.getEndTime().getHour()) : "15:00";
+            com.armi.model.PayrollLog payrollLog = new com.armi.model.PayrollLog(
+                    "27 al 02 de Agosto",
+                    driver.getName() != null ? driver.getName() : "Repartidor",
+                    driver.getEmail() != null ? driver.getEmail() : "ID",
+                    storeName,
+                    startH + " - " + endH,
+                    shift.getOrdersCount() != null ? shift.getOrdersCount() : 4,
+                    dailyEarned
+            );
+            payrollLogRepository.save(payrollLog);
+        } catch (Exception e) {
+            // Ignore payroll log error if any
         }
+
+        // Static Daily Shift Reset: Reset to available for tomorrow
+        shift.setStatus("available");
+        shift.setAssignedTo(null);
 
         return shiftPersistencePort.saveShift(shift);
     }

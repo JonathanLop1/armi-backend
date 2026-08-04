@@ -4,6 +4,7 @@ import com.armi.domain.port.in.ShiftUseCase;
 import com.armi.domain.port.in.UserUseCase;
 import com.armi.repository.IncidentReportRepository;
 import com.armi.repository.OrderLogRepository;
+import com.armi.repository.PayrollLogRepository;
 import com.armi.repository.StoreRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,18 +23,22 @@ public class DataController {
     private final OrderLogRepository orderLogRepository;
     private final IncidentReportRepository incidentReportRepository;
 
+    private final PayrollLogRepository payrollLogRepository;
+
     public DataController(
             ShiftUseCase shiftUseCase,
             UserUseCase userUseCase,
             StoreRepository storeRepository,
             OrderLogRepository orderLogRepository,
-            IncidentReportRepository incidentReportRepository
+            IncidentReportRepository incidentReportRepository,
+            PayrollLogRepository payrollLogRepository
     ) {
         this.shiftUseCase = shiftUseCase;
         this.userUseCase = userUseCase;
         this.storeRepository = storeRepository;
         this.orderLogRepository = orderLogRepository;
         this.incidentReportRepository = incidentReportRepository;
+        this.payrollLogRepository = payrollLogRepository;
     }
 
     // Dashboard Data (Aggregated Facade for Web Dashboard)
@@ -46,6 +51,7 @@ public class DataController {
         data.put("timeLogs", shiftUseCase.getAllTimeLogs());
         data.put("orders", orderLogRepository.findAll());
         data.put("incidents", incidentReportRepository.findAll());
+        data.put("payroll", payrollLogRepository.findAll());
         return ResponseEntity.ok(data);
     }
 
@@ -76,6 +82,7 @@ public class DataController {
     // Completely wipe all tables to 0 records (Clean Slate)
     @DeleteMapping("/data/clean-slate")
     public ResponseEntity<String> cleanSlateDatabase() {
+        payrollLogRepository.deleteAll();
         orderLogRepository.deleteAll();
         incidentReportRepository.deleteAll();
         shiftUseCase.deleteAllShifts();
