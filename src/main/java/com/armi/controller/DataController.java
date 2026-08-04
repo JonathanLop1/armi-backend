@@ -59,9 +59,17 @@ public class DataController {
         return ResponseEntity.ok(shiftUseCase.getAllTimeLogs());
     }
 
+    @DeleteMapping("/stores/{id}")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Void> deleteStore(@PathVariable Long id) {
+        storeRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/stores/all")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> deleteAllStores() {
-        storeRepository.deleteAll();
+        storeRepository.truncateStores();
         return ResponseEntity.noContent().build();
     }
 
