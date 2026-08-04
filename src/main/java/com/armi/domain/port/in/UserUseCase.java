@@ -10,4 +10,5 @@ public interface UserUseCase {
     List<AppUser> createUsersBulk(List<AppUser> users);
     Optional<AppUser> login(String emailOrId, String password);
     void deleteUser(Long id);
+    void deleteAllUsers();
 }

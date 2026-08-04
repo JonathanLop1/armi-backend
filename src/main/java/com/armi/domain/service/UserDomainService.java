@@ -90,4 +90,10 @@ public class UserDomainService implements UserUseCase {
     public void deleteUser(Long id) {
         userPersistencePort.deleteUserById(id);
     }
+
+    @Override
+    @Transactional
+    public void deleteAllUsers() {
+        userPersistencePort.deleteAllUsers();
+    }
 }

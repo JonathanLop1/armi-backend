@@ -64,6 +64,12 @@ public class UserWebAdapter {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/users/all")
+    public ResponseEntity<Void> deleteAllUsers() {
+        userUseCase.deleteAllUsers();
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/users/deduplicate")
     public ResponseEntity<String> deduplicateUsers() {
         List<AppUser> allUsers = userUseCase.getAllUsers();
