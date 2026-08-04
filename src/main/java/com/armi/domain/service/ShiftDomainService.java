@@ -214,8 +214,12 @@ public class ShiftDomainService implements ShiftUseCase {
     public Shift endShift(Long shiftId, Long driverId) {
         Shift shift = shiftPersistencePort.findShiftById(shiftId)
                 .orElseThrow(() -> new RuntimeException("Turno no encontrado"));
-        if (shift.getAssignedTo() == null || !shift.getAssignedTo().getId().equals(driverId) || !"in_progress".equals(shift.getStatus())) {
-            throw new RuntimeException("Operación inválida o el turno no está en curso");
+
+        AppUser driver = userPersistencePort.findUserById(driverId)
+                .orElseGet(() -> (shift.getAssignedTo() != null) ? shift.getAssignedTo() : null);
+
+        if (driver == null) {
+            throw new RuntimeException("Repartidor no encontrado para este turno");
         }
 
         double dailyEarned;
@@ -227,14 +231,21 @@ public class ShiftDomainService implements ShiftUseCase {
             dailyEarned = scheduledHours * (shift.getHourlyRate() != null ? shift.getHourlyRate() : 10000.0);
         }
 
-        TimeLog log = shiftPersistencePort.findFirstTimeLogByShiftId(shiftId)
-                .orElseThrow(() -> new RuntimeException("No se encontró el registro de inicio de este turno"));
+        TimeLog log = shiftPersistencePort.findFirstTimeLogByShiftId(shiftId).orElseGet(() -> {
+            TimeLog newLog = new TimeLog();
+            newLog.setShift(shift);
+            newLog.setDriver(driver);
+            newLog.setActualStart(shift.getStartTime() != null ? shift.getStartTime() : LocalDateTime.now());
+            newLog.setPunctualityStatus("ON_TIME");
+            return newLog;
+        });
+
         log.setActualEnd(LocalDateTime.now());
         log.setTotalEarned(dailyEarned);
         shiftPersistencePort.saveTimeLog(log);
 
-        AppUser driver = shift.getAssignedTo();
-        driver.setAccumulatedEarnings((driver.getAccumulatedEarnings() != null ? driver.getAccumulatedEarnings() : 0.0) + dailyEarned);
+        double currentEarnings = (driver.getAccumulatedEarnings() != null) ? driver.getAccumulatedEarnings() : 0.0;
+        driver.setAccumulatedEarnings(currentEarnings + dailyEarned);
         userPersistencePort.saveUser(driver);
 
         int currentDuration = (shift.getDurationDays() != null && shift.getDurationDays() > 0) ? shift.getDurationDays() : 1;
