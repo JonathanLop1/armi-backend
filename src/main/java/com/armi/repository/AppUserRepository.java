@@ -4,6 +4,14 @@ import com.armi.model.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import java.util.Optional;
+
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findByEmail(String email);
+
+    @Modifying
+    @Query(value = "DELETE FROM users", nativeQuery = true)
+    void truncateUsers();
 }

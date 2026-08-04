@@ -59,15 +59,21 @@ public class DataController {
         return ResponseEntity.ok(shiftUseCase.getAllTimeLogs());
     }
 
+    @DeleteMapping("/stores/all")
+    public ResponseEntity<Void> deleteAllStores() {
+        storeRepository.deleteAll();
+        return ResponseEntity.noContent().build();
+    }
+
     // Completely wipe all tables to 0 records (Clean Slate)
     @DeleteMapping("/data/clean-slate")
     public ResponseEntity<String> cleanSlateDatabase() {
         orderLogRepository.deleteAll();
         incidentReportRepository.deleteAll();
         shiftUseCase.deleteAllShifts();
+        userUseCase.deleteAllUsers();
         storeRepository.deleteAll();
-        userUseCase.getAllUsers().forEach(u -> userUseCase.deleteUser(u.getId()));
-        return ResponseEntity.ok("Base de datos vaciada totalmente a 0 registros. Lista para la carga del nuevo Excel.");
+        return ResponseEntity.ok("Base de datos vaciada totalmente a 0 registros.");
     }
 
     @DeleteMapping("/data/reset-all")

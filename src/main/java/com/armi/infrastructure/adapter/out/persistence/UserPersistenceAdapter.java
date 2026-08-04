@@ -34,7 +34,7 @@ public class UserPersistenceAdapter implements UserPersistencePort {
 
     @Override
     public void deleteAllUsers() {
-        userRepository.deleteAll();
+        userRepository.truncateUsers();
     }
 
     @Override
